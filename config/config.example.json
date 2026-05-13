@@ -1,0 +1,42 @@
+{
+  "telegram": {
+    "bot_token": "YOUR_BOT_TOKEN",
+    "webhook_url": "https://your-domain.sealos.run/webhook"
+  },
+  "database": {
+    "url": "postgresql://user:password@localhost:5432/sniperbot"
+  },
+  "redis": {
+    "url": "redis://localhost:6379/0"
+  },
+  "payment": {
+    "alipay": {
+      "app_id": "",
+      "private_key_path": "config/alipay_private_key.pem",
+      "public_key_path": "config/alipay_public_key.pem"
+    },
+    "wechat": {
+      "app_id": "",
+      "mch_id": "",
+      "api_key": ""
+    },
+    "stripe": {
+      "secret_key": "",
+      "webhook_secret": ""
+    }
+  },
+  "plans": {
+    "free":  { "price_cny": 0,   "watchlist_limit": 5,  "markets": ["A"] },
+    "pro":   { "price_cny": 29,  "watchlist_limit": 10, "markets": ["A"] },
+    "elite": { "price_cny": 99,  "watchlist_limit": 999, "markets": ["A", "US"] }
+  },
+  "schedule": {
+    "a_share": "40 14 * * 1-5",
+    "us_share": "0 22 * * 1-5"
+  },
+  "market": {
+    "a_share_top_n": 100,
+    "a_share_min_value_yi": 5.0,
+    "us_etfs": ["SPY", "QQQ", "IWM", "GLD", "TLT", "ARKK", "SOXX", "XLK", "XLE", "XLF"]
+  }
+}
