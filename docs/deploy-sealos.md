@@ -2,17 +2,31 @@
 
 ## 一、推送镜像到 Docker Hub
 
+### 方式 A：GitHub Actions 自动构建（推荐）
+
+每次 push 到 `main` 分支自动构建并推送镜像，无需本地 Docker。
+
+**前置步骤：**
+1. 在 [hub.docker.com](https://hub.docker.com) 注册账号
+2. 在 Docker Hub → Account Settings → Security → 创建 **Access Token**
+3. 在 GitHub 仓库 → Settings → Secrets and variables → Actions → 添加两个 Secret：
+
+| Secret 名称 | 值 |
+|-------------|-----|
+| `DOCKERHUB_USERNAME` | 你的 Docker Hub 用户名 |
+| `DOCKERHUB_TOKEN` | 刚创建的 Access Token |
+
+4. 推送代码到 main 分支，Actions 自动运行，约 2 分钟完成
+
+### 方式 B：本地手动构建
+
 ```bash
 cd sniper-bot
-
-# 构建镜像
 docker build -t your-dockerhub-username/sniper-bot:latest .
-
-# 推送
 docker push your-dockerhub-username/sniper-bot:latest
 ```
 
-> 也可以用 GitHub Actions 自动构建推送，见下方 CI 配置。
+> 需要本地安装 Docker Desktop。
 
 ---
 
