@@ -24,9 +24,10 @@ RUN /root/.local/bin/uv python install 3.11 \
     && UV_PROJECT_ENVIRONMENT=/opt/hermes-agent/venv \
        /root/.local/bin/uv sync --extra messaging --extra cron --locked
 
-# 安装 akshare（用 uv，venv 里默认没有 pip）
-RUN UV_PROJECT_ENVIRONMENT=/opt/hermes-agent/venv \
-    /root/.local/bin/uv pip install --no-cache-dir "akshare>=1.18.0"
+# 安装 akshare 到 hermes venv
+RUN /root/.local/bin/uv pip install --no-cache-dir \
+    --python /opt/hermes-agent/venv/bin/python \
+    "akshare>=1.18.0"
 
 # symlink hermes 命令
 RUN mkdir -p /root/.local/bin \
