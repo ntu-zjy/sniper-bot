@@ -1,6 +1,6 @@
 ---
 name: sniper-signals
-description: "Use when user asks for ETF trading signals, daily analysis, portfolio status, or says '分析今日行情', '今天怎么样', '有没有买入信号', '看看持仓', '我的账户'. Fetches real-time A-share ETF prices and generates grid strategy signals."
+description: "Use when user asks for ETF trading signals, daily analysis, portfolio status, or says '分析今日行情', '今天怎么样', '有没有买入信号', '看看持仓', '我的账户', '持仓情况'. Fetches real-time A-share ETF prices and generates grid strategy signals per user."
 version: 1.0.0
 author: SniperBot
 license: MIT
@@ -14,8 +14,8 @@ metadata:
 
 ## Overview
 
-为当前用户拉取 A股 ETF 实时行情，执行网格策略分析，输出买卖建议。
-数据按 Telegram user_id 隔离，每个用户有独立的自选池和持仓。
+为当前 Telegram 用户拉取 A股 ETF 实时行情，执行网格策略分析，输出买卖建议。
+持仓数据按 user_id 完全隔离，每个用户有独立的持仓文件。
 
 SniperBot 路径：`/app`
 
@@ -26,65 +26,90 @@ SniperBot 路径：`/app`
 
 ## 执行步骤
 
-### 第一步：获取当前用户信息
+### 获取当前用户 user_id
 
 ```python
-import sys
+import os, sys
 sys.path.insert(0, '/app')
-from src.core import config
-from src.user.models import UserStore
 
-config.load()
-store = UserStore()
+# 从 HERMES_SESSION_KEY 提取 user_id
+# 格式: agent:main:telegram:dm:{user_id}
+session_key = os.environ.get('HERMES_SESSION_KEY', '')
+parts = session_key.split(':')
+user_id = int(parts[4]) if len(parts) >= 5 and parts[4].lstrip('-').isdigit() else 0
 
-# 通过 hermes context 获取 telegram user_id
-# user_id 在 hermes 里通过 {{USER_ID}} 或环境变量传入
-import os
-user_id = int(os.environ.get('HERMES_USER_ID', '0'))
-user = store.get(user_id)
-if not user:
-    print("用户未注册，请先发送 /start")
-    exit()
-
-print(f"用户: {user.first_name}, 模式: {user.account_type}, 自选池: {len(user.watchlist)}只")
+print(f"Session key: {session_key}")
+print(f"User ID: {user_id}")
 ```
 
-### 第二步：拉取行情 + 生成信号
+### 获取或创建用户 + 生成信号
 
 ```python
-import sys
+import os, sys
 sys.path.insert(0, '/app')
 from src.core import config
 from src.user.models import UserStore
 from src.user.portfolio import Portfolio
 from src.market.a_share import fetch_prices
 from src.strategy.grid import generate_signals, format_signals_text
-import os
+
+# 提取 user_id
+session_key = os.environ.get('HERMES_SESSION_KEY', '')
+parts = session_key.split(':')
+user_id = int(parts[4]) if len(parts) >= 5 and parts[4].lstrip('-').isdigit() else 0
 
 config.load()
 store = UserStore()
-user_id = int(os.environ.get('HERMES_USER_ID', '0'))
-user = store.get(user_id)
 
+# 自动创建新用户（首次使用）
+user, is_new = store.get_or_create(user_id, '', '')
+if is_new:
+    print(f"新用户已注册，user_id={user_id}")
+
+# 拉取行情
 symbols = [w.symbol for w in user.watchlist]
 prices = fetch_prices(symbols)
 
-portfolio = Portfolio(user.user_id, user.account_type)
+# 持仓按 user_id 隔离
+portfolio = Portfolio(user_id, user.account_type)
 portfolio.update_prices({s: d['current_price'] for s, d in prices.items()})
 
-signals = generate_signals(prices, portfolio, user.watchlist,
-                           config.get()['strategy']['stop_loss'])
+# 生成信号
+signals = generate_signals(
+    prices, portfolio, user.watchlist,
+    config.get()['strategy']['stop_loss']
+)
 print(format_signals_text(signals, user.account_type))
 ```
 
-## 输出格式
+## 持仓查询
 
-以 Markdown 表格输出：
-- 买入信号（绿色）：标的、现价、涨跌幅、建议买入数量和金额、原因
-- 卖出信号（红色）：标的、现价、涨跌幅、建议卖出数量、原因
-- 观望：简短列出
+```python
+import os, sys
+sys.path.insert(0, '/app')
+from src.core import config
+from src.user.models import UserStore
+from src.user.portfolio import Portfolio
+
+session_key = os.environ.get('HERMES_SESSION_KEY', '')
+parts = session_key.split(':')
+user_id = int(parts[4]) if len(parts) >= 5 and parts[4].lstrip('-').isdigit() else 0
+
+config.load()
+store = UserStore()
+user, _ = store.get_or_create(user_id, '', '')
+portfolio = Portfolio(user_id, user.account_type)
+import json
+print(json.dumps(portfolio.get_summary(), ensure_ascii=False, indent=2))
+```
+
+## 数据隔离说明
+
+- 每个用户的数据存储在 `/app/data/{user_id}/simulation/` 或 `/app/data/{user_id}/real/`
+- `UserStore` 存储在 `/app/data/users.json`，按 user_id 索引
+- 用户之间完全隔离，互不影响
 
 ## Common Pitfalls
 
-1. 非交易时间（09:30前、15:00后、周末）行情数据是上一交易日收盘价，需注明
-2. user_id 必须正确传入，否则找不到用户数据
+1. 非交易时间（09:30前、15:00后、周末）行情是上一交易日收盘价，需注明
+2. `HERMES_SESSION_KEY` 为空时（CLI 调试），user_id 默认为 0
