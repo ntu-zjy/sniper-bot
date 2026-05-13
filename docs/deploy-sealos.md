@@ -22,8 +22,8 @@
 
 ```bash
 cd sniper-bot
-docker build -t your-dockerhub-username/sniper-bot:latest .
-docker push your-dockerhub-username/sniper-bot:latest
+docker build -t jingyuanzzz/sniper-bot:latest .
+docker push jingyuanzzz/sniper-bot:latest
 ```
 
 > 需要本地安装 Docker Desktop。
@@ -39,7 +39,7 @@ docker push your-dockerhub-username/sniper-bot:latest
 | 字段 | 值 |
 |------|----|
 | 应用名称 | `sniper-bot` |
-| 镜像 | `your-dockerhub-username/sniper-bot:latest` |
+| 镜像 | `jingyuanzzz/sniper-bot:latest` |
 | CPU | 0.1 核（初期够用） |
 | 内存 | 256 MB |
 | 实例数 | 1 |
@@ -81,8 +81,8 @@ INFO  src.scheduler.daily: 已注册 A股定时推送任务：工作日 14:40 �
 ## 四、更新部署
 
 ```bash
-docker build -t your-dockerhub-username/sniper-bot:latest .
-docker push your-dockerhub-username/sniper-bot:latest
+docker build -t jingyuanzzz/sniper-bot:latest .
+docker push jingyuanzzz/sniper-bot:latest
 ```
 
 在 Sealos 控制台点击**重新部署**（或修改镜像 tag 触发滚动更新）。
